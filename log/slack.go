@@ -32,6 +32,12 @@ type Logger struct {
 	Writer LogWriter
 }
 
+var std = New("")
+
+func Default() *Logger {
+	return std
+}
+
 func (lw LogWriter) info(p []byte) (n int, err error) {
 	if lw.Level < LevelInfo {
 		return
@@ -114,9 +120,17 @@ func New(webhookLink string) *Logger {
 	}
 }
 
+func WithLevel(level LogLevel) Logger {
+	return std.WithLevel(level)
+}
+
 func (l *Logger) WithLevel(level LogLevel) Logger {
 	l.Writer.Level = level
 	return *l
+}
+
+func WithWriter(w LogWriter) Logger {
+	return std.WithWriter(w)
 }
 
 func (l *Logger) WithWriter(w LogWriter) Logger {
@@ -124,40 +138,80 @@ func (l *Logger) WithWriter(w LogWriter) Logger {
 	return *l
 }
 
+func Log(msg string) {
+	std.Log(msg)
+}
+
 func (l *Logger) Log(msg string) {
 	l.Writer.log([]byte(msg))
+}
+
+func Logf(msg string, args ...interface{}) {
+	std.Logf(msg, args...)
 }
 
 func (l *Logger) Logf(msg string, args ...interface{}) {
 	l.Writer.log([]byte(fmt.Sprintf(msg, args...)))
 }
 
+func Logln(args ...interface{}) {
+	std.Logln(args...)
+}
+
 func (l *Logger) Logln(args ...interface{}) {
 	l.Writer.log([]byte(fmt.Sprintln(args...)))
+}
+
+func Error(args ...interface{}) {
+	std.Error(args...)
 }
 
 func (l *Logger) Error(args ...interface{}) {
 	l.Writer.error([]byte(fmt.Sprintln(args...)))
 }
 
+func Errorf(format string, args ...interface{}) {
+	std.Errorf(format, args...)
+}
+
 func (l *Logger) Errorf(format string, args ...interface{}) {
 	l.Writer.error([]byte(fmt.Sprintf(format, args...)))
+}
+
+func Errorln(args ...interface{}) {
+	std.Errorln(args...)
 }
 
 func (l *Logger) Errorln(args ...interface{}) {
 	l.Writer.error([]byte(fmt.Sprintln(args...)))
 }
 
+func Warning(warning string) {
+	std.Warning(warning)
+}
+
 func (l *Logger) Warning(warning string) {
 	l.Writer.warning([]byte(warning))
+}
+
+func Warningf(format string, args ...interface{}) {
+	std.Warningf(format, args...)
 }
 
 func (l *Logger) Warningf(format string, args ...interface{}) {
 	l.Writer.warning([]byte(fmt.Sprintf(format, args...)))
 }
 
+func Warningln(args ...interface{}) {
+	std.Warningln(args...)
+}
+
 func (l *Logger) Warningln(args ...interface{}) {
 	l.Writer.warning([]byte(fmt.Sprintln(args...)))
+}
+
+func Info(info string) {
+	std.Info(info)
 }
 
 func (l *Logger) Info(info string) {
@@ -167,32 +221,64 @@ func (l *Logger) Info(info string) {
 	}
 }
 
+func Infof(format string, args ...interface{}) {
+	std.Infof(format, args...)
+}
+
 func (l *Logger) Infof(format string, args ...interface{}) {
 	l.Writer.info([]byte(fmt.Sprintf(format, args...)))
+}
+
+func Infoln(args ...interface{}) {
+	std.Infoln(args...)
 }
 
 func (l *Logger) Infoln(args ...interface{}) {
 	l.Writer.info([]byte(fmt.Sprintln(args...)))
 }
 
+func Debug(debug string) {
+	std.Debug(debug)
+}
+
 func (l *Logger) Debug(debug string) {
 	l.Writer.debug([]byte(debug))
+}
+
+func Debugf(format string, args ...interface{}) {
+	std.Debugf(format, args...)
 }
 
 func (l *Logger) Debugf(format string, args ...interface{}) {
 	l.Writer.debug([]byte(fmt.Sprintf(format, args...)))
 }
 
+func Debugln(args ...interface{}) {
+	std.Debugln(args...)
+}
+
 func (l *Logger) Debugln(args ...interface{}) {
 	l.Writer.debug([]byte(fmt.Sprintln(args...)))
+}
+
+func Trace(trace string) {
+	std.Trace(trace)
 }
 
 func (l *Logger) Trace(trace string) {
 	l.Writer.trace([]byte(trace))
 }
 
+func Tracef(format string, args ...interface{}) {
+	std.Tracef(format, args...)
+}
+
 func (l *Logger) Tracef(format string, args ...interface{}) {
 	l.Writer.trace([]byte(fmt.Sprintf(format, args...)))
+}
+
+func Traceln(args ...interface{}) {
+	std.Traceln(args...)
 }
 
 func (l *Logger) Traceln(args ...interface{}) {
