@@ -62,8 +62,8 @@ log.Errorf("Error occurred: %v", err)
 For each log level (Error, Warning, Info, Debug, Trace), the following methods are available:
 
 - `Level(message string)`
-- `Levelf(format string, args ...interface{})`
-- `Levelln(args ...interface{})`
+- `Levelf(format string, args ...any)`
+- `Levelln(args ...any)`
 
 Example:
 
