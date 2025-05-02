@@ -38,8 +38,8 @@ logger := log.New("https://hooks.slack.com/services/...")
 // Set log level
 logger = logger.WithLevel(log.LevelInfo)
 
-// Set global prefix
-log.SetPrefix("[MyApp]")
+// Set prefix
+logger.SetPrefix("[MyApp]")
 
 // Log messages
 logger.Info("This is an info message")
