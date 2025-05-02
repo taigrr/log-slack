@@ -1,4 +1,4 @@
-# Log Package
+# Log-Slack
 
 A Go package for sending logs to Slack via webhooks with different log levels.
 
@@ -118,12 +118,12 @@ logger := log.Default().WithWriter(writer)
 
 By default, failed Slack posts are silently ignored. To handle errors, you can check the return value of logging methods:
 
-        ```go
-        logger.Info("message")
-        if err := logger.Err(); err != nil {
-            // Handle error
-        }
-        ```
+```go
+logger.Info("message")
+if err := logger.Err(); err != nil {
+    // Handle error
+}
+```
 
 ## Notes
 
