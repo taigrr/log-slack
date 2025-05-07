@@ -225,53 +225,53 @@ func (l *Logger) Log(msg string) {
 }
 
 // Logf writes a formatted message at the default info level.
-func Logf(msg string, args ...interface{}) {
+func Logf(msg string, args ...any) {
 	std.Logf(msg, args...)
 }
 
 // Logf writes a formatted message at the default info level.
-func (l *Logger) Logf(msg string, args ...interface{}) {
-	l.Writer.log([]byte(fmt.Sprintf(msg, args...)))
+func (l *Logger) Logf(msg string, args ...any) {
+	l.Writer.log(fmt.Appendf(nil, msg, args...))
 }
 
 // Logln writes a message at the default info level with a newline.
-func Logln(args ...interface{}) {
+func Logln(args ...any) {
 	std.Logln(args...)
 }
 
 // Logln writes a message at the default info level with a newline.
-func (l *Logger) Logln(args ...interface{}) {
-	l.Writer.log([]byte(fmt.Sprintln(args...)))
+func (l *Logger) Logln(args ...any) {
+	l.Writer.log(fmt.Appendln(nil, args...))
 }
 
 // Error writes an error level message.
-func Error(args ...interface{}) {
+func Error(args ...any) {
 	std.Error(args...)
 }
 
 // Error writes an error level message.
-func (l *Logger) Error(args ...interface{}) {
-	l.Writer.error([]byte(fmt.Sprintln(args...)))
+func (l *Logger) Error(args ...any) {
+	l.Writer.error(fmt.Appendln(nil, args...))
 }
 
 // Errorf writes a formatted error level message.
-func Errorf(format string, args ...interface{}) {
+func Errorf(format string, args ...any) {
 	std.Errorf(format, args...)
 }
 
 // Errorf writes a formatted error level message.
-func (l *Logger) Errorf(format string, args ...interface{}) {
-	l.Writer.error([]byte(fmt.Sprintf(format, args...)))
+func (l *Logger) Errorf(format string, args ...any) {
+	l.Writer.error(fmt.Appendf(nil, format, args...))
 }
 
 // Errorln writes an error level message with a newline.
-func Errorln(args ...interface{}) {
+func Errorln(args ...any) {
 	std.Errorln(args...)
 }
 
 // Errorln writes an error level message with a newline.
-func (l *Logger) Errorln(args ...interface{}) {
-	l.Writer.error([]byte(fmt.Sprintln(args...)))
+func (l *Logger) Errorln(args ...any) {
+	l.Writer.error(fmt.Appendln(nil, args...))
 }
 
 // Warning writes a warning level message.
@@ -285,23 +285,23 @@ func (l *Logger) Warning(warning string) {
 }
 
 // Warningf writes a formatted warning level message.
-func Warningf(format string, args ...interface{}) {
+func Warningf(format string, args ...any) {
 	std.Warningf(format, args...)
 }
 
 // Warningf writes a formatted warning level message.
-func (l *Logger) Warningf(format string, args ...interface{}) {
-	l.Writer.warning([]byte(fmt.Sprintf(format, args...)))
+func (l *Logger) Warningf(format string, args ...any) {
+	l.Writer.warning(fmt.Appendf(nil, format, args...))
 }
 
 // Warningln writes a warning level message with a newline.
-func Warningln(args ...interface{}) {
+func Warningln(args ...any) {
 	std.Warningln(args...)
 }
 
 // Warningln writes a warning level message with a newline.
-func (l *Logger) Warningln(args ...interface{}) {
-	l.Writer.warning([]byte(fmt.Sprintln(args...)))
+func (l *Logger) Warningln(args ...any) {
+	l.Writer.warning(fmt.Appendln(nil, args...))
 }
 
 // Info writes an info level message.
@@ -318,26 +318,26 @@ func (l *Logger) Info(info string) {
 }
 
 // Infof writes a formatted info level message.
-func Infof(format string, args ...interface{}) {
+func Infof(format string, args ...any) {
 	std.Infof(format, args...)
 }
 
 // Infof writes a formatted info level message.
-func (l *Logger) Infof(format string, args ...interface{}) {
-	_, err := l.Writer.info([]byte(fmt.Sprintf(format, args...)))
+func (l *Logger) Infof(format string, args ...any) {
+	_, err := l.Writer.info(fmt.Appendf(nil, format, args...))
 	if err != nil {
 		l.err = err
 	}
 }
 
 // Infoln writes an info level message with a newline.
-func Infoln(args ...interface{}) {
+func Infoln(args ...any) {
 	std.Infoln(args...)
 }
 
 // Infoln writes an info level message with a newline.
-func (l *Logger) Infoln(args ...interface{}) {
-	_, err := l.Writer.info([]byte(fmt.Sprintln(args...)))
+func (l *Logger) Infoln(args ...any) {
+	_, err := l.Writer.info(fmt.Appendln(nil, args...))
 	if err != nil {
 		l.err = err
 	}
@@ -357,25 +357,25 @@ func (l *Logger) Debug(debug string) {
 }
 
 // Debugf writes a formatted debug level message.
-func Debugf(format string, args ...interface{}) {
+func Debugf(format string, args ...any) {
 	std.Debugf(format, args...)
 }
 
-func (l *Logger) Debugf(format string, args ...interface{}) {
-	_, err := l.Writer.debug([]byte(fmt.Sprintf(format, args...)))
+func (l *Logger) Debugf(format string, args ...any) {
+	_, err := l.Writer.debug(fmt.Appendf(nil, format, args...))
 	if err != nil {
 		l.err = err
 	}
 }
 
 // Debugln writes a debug level message with a newline.
-func Debugln(args ...interface{}) {
+func Debugln(args ...any) {
 	std.Debugln(args...)
 }
 
 // Debugln writes a debug level message with a newline.
-func (l *Logger) Debugln(args ...interface{}) {
-	_, err := l.Writer.debug([]byte(fmt.Sprintln(args...)))
+func (l *Logger) Debugln(args ...any) {
+	_, err := l.Writer.debug(fmt.Appendln(nil, args...))
 	if err != nil {
 		l.err = err
 	}
@@ -395,68 +395,68 @@ func (l *Logger) Trace(trace string) {
 }
 
 // Tracef writes a formatted trace level message.
-func Tracef(format string, args ...interface{}) {
+func Tracef(format string, args ...any) {
 	std.Tracef(format, args...)
 }
 
 // Tracef writes a formatted trace level message.
-func (l *Logger) Tracef(format string, args ...interface{}) {
-	_, err := l.Writer.trace([]byte(fmt.Sprintf(format, args...)))
+func (l *Logger) Tracef(format string, args ...any) {
+	_, err := l.Writer.trace(fmt.Appendf(nil, format, args...))
 	if err != nil {
 		l.err = err
 	}
 }
 
 // Traceln writes a trace level message with a newline.
-func Traceln(args ...interface{}) {
+func Traceln(args ...any) {
 	std.Traceln(args...)
 }
 
 // Traceln writes a trace level message with a newline.
-func (l *Logger) Traceln(args ...interface{}) {
-	_, err := l.Writer.trace([]byte(fmt.Sprintln(args...)))
+func (l *Logger) Traceln(args ...any) {
+	_, err := l.Writer.trace(fmt.Appendln(nil, args...))
 	if err != nil {
 		l.err = err
 	}
 }
 
 // Basic logging functions
-func Print(v ...interface{}) {
+func Print(v ...any) {
 	std.Log(fmt.Sprint(v...))
 }
 
 // Printf writes a formatted message at the default info level.
-func Printf(format string, v ...interface{}) {
+func Printf(format string, v ...any) {
 	std.Logf(format, v...)
 }
 
 // Println writes a message at the default info level with a newline.
-func Println(v ...interface{}) {
+func Println(v ...any) {
 	std.Logln(v...)
 }
 
 // Fatal writes a message at the default error level.
 // Subsequently, it calls os.Exit(1).
-func Fatal(v ...interface{}) {
+func Fatal(v ...any) {
 	std.Error(fmt.Sprint(v...))
 	os.Exit(1)
 }
 
 // Fatalf writes a formatted message at the default error level.
-func Fatalf(format string, v ...interface{}) {
+func Fatalf(format string, v ...any) {
 	std.Errorf(format, v...)
 	os.Exit(1)
 }
 
 // Fatalln writes a message at the default error level with a newline.
-func Fatalln(v ...interface{}) {
+func Fatalln(v ...any) {
 	std.Errorln(v...)
 	os.Exit(1)
 }
 
 // Panic writes a message at the default error level.
 // Subsequently, it panics with the message.
-func Panic(v ...interface{}) {
+func Panic(v ...any) {
 	s := fmt.Sprint(v...)
 	std.Error(s)
 	panic(s)
@@ -464,7 +464,7 @@ func Panic(v ...interface{}) {
 
 // Panicf writes a formatted message at the default error level.
 // Subsequently, it panics with the formatted message.
-func Panicf(format string, v ...interface{}) {
+func Panicf(format string, v ...any) {
 	s := fmt.Sprintf(format, v...)
 	std.Error(s)
 	panic(s)
@@ -472,7 +472,7 @@ func Panicf(format string, v ...interface{}) {
 
 // Panicln writes a message at the default error level with a newline.
 // Subsequently, it panics with the message.
-func Panicln(v ...interface{}) {
+func Panicln(v ...any) {
 	s := fmt.Sprintln(v...)
 	std.Error(s)
 	panic(s)
