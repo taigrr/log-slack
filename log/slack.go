@@ -44,6 +44,12 @@ func (l *Logger) SetPrefix(p string) {
 	l.Writer.prefix = p
 }
 
+func (l *Logger) setErr(err error) {
+	if err != nil {
+		l.err = err
+	}
+}
+
 // Err returns the error for the Logger.
 func (l *Logger) Err() error {
 	return l.err
@@ -221,7 +227,8 @@ func Log(msg string) {
 
 // Log writes a message at the default info level.
 func (l *Logger) Log(msg string) {
-	l.Writer.log([]byte(msg))
+	_, err := l.Writer.log([]byte(msg))
+	l.setErr(err)
 }
 
 // Logf writes a formatted message at the default info level.
@@ -231,7 +238,8 @@ func Logf(msg string, args ...any) {
 
 // Logf writes a formatted message at the default info level.
 func (l *Logger) Logf(msg string, args ...any) {
-	l.Writer.log(fmt.Appendf(nil, msg, args...))
+	_, err := l.Writer.log(fmt.Appendf(nil, msg, args...))
+	l.setErr(err)
 }
 
 // Logln writes a message at the default info level with a newline.
@@ -241,7 +249,8 @@ func Logln(args ...any) {
 
 // Logln writes a message at the default info level with a newline.
 func (l *Logger) Logln(args ...any) {
-	l.Writer.log(fmt.Appendln(nil, args...))
+	_, err := l.Writer.log(fmt.Appendln(nil, args...))
+	l.setErr(err)
 }
 
 // Error writes an error level message.
@@ -251,7 +260,8 @@ func Error(args ...any) {
 
 // Error writes an error level message.
 func (l *Logger) Error(args ...any) {
-	l.Writer.error(fmt.Appendln(nil, args...))
+	_, err := l.Writer.error(fmt.Appendln(nil, args...))
+	l.setErr(err)
 }
 
 // Errorf writes a formatted error level message.
@@ -261,7 +271,8 @@ func Errorf(format string, args ...any) {
 
 // Errorf writes a formatted error level message.
 func (l *Logger) Errorf(format string, args ...any) {
-	l.Writer.error(fmt.Appendf(nil, format, args...))
+	_, err := l.Writer.error(fmt.Appendf(nil, format, args...))
+	l.setErr(err)
 }
 
 // Errorln writes an error level message with a newline.
@@ -271,7 +282,8 @@ func Errorln(args ...any) {
 
 // Errorln writes an error level message with a newline.
 func (l *Logger) Errorln(args ...any) {
-	l.Writer.error(fmt.Appendln(nil, args...))
+	_, err := l.Writer.error(fmt.Appendln(nil, args...))
+	l.setErr(err)
 }
 
 // Warning writes a warning level message.
@@ -281,7 +293,8 @@ func Warning(warning string) {
 
 // Warning writes a warning level message.
 func (l *Logger) Warning(warning string) {
-	l.Writer.warning([]byte(warning))
+	_, err := l.Writer.warning([]byte(warning))
+	l.setErr(err)
 }
 
 // Warningf writes a formatted warning level message.
@@ -291,7 +304,8 @@ func Warningf(format string, args ...any) {
 
 // Warningf writes a formatted warning level message.
 func (l *Logger) Warningf(format string, args ...any) {
-	l.Writer.warning(fmt.Appendf(nil, format, args...))
+	_, err := l.Writer.warning(fmt.Appendf(nil, format, args...))
+	l.setErr(err)
 }
 
 // Warningln writes a warning level message with a newline.
@@ -301,7 +315,8 @@ func Warningln(args ...any) {
 
 // Warningln writes a warning level message with a newline.
 func (l *Logger) Warningln(args ...any) {
-	l.Writer.warning(fmt.Appendln(nil, args...))
+	_, err := l.Writer.warning(fmt.Appendln(nil, args...))
+	l.setErr(err)
 }
 
 // Info writes an info level message.
@@ -312,9 +327,7 @@ func Info(info string) {
 // Info writes an info level message.
 func (l *Logger) Info(info string) {
 	_, err := l.Writer.info([]byte(info))
-	if err != nil {
-		l.err = err
-	}
+	l.setErr(err)
 }
 
 // Infof writes a formatted info level message.
@@ -325,9 +338,7 @@ func Infof(format string, args ...any) {
 // Infof writes a formatted info level message.
 func (l *Logger) Infof(format string, args ...any) {
 	_, err := l.Writer.info(fmt.Appendf(nil, format, args...))
-	if err != nil {
-		l.err = err
-	}
+	l.setErr(err)
 }
 
 // Infoln writes an info level message with a newline.
@@ -338,9 +349,7 @@ func Infoln(args ...any) {
 // Infoln writes an info level message with a newline.
 func (l *Logger) Infoln(args ...any) {
 	_, err := l.Writer.info(fmt.Appendln(nil, args...))
-	if err != nil {
-		l.err = err
-	}
+	l.setErr(err)
 }
 
 // Debug writes a debug level message.
@@ -363,9 +372,7 @@ func Debugf(format string, args ...any) {
 
 func (l *Logger) Debugf(format string, args ...any) {
 	_, err := l.Writer.debug(fmt.Appendf(nil, format, args...))
-	if err != nil {
-		l.err = err
-	}
+	l.setErr(err)
 }
 
 // Debugln writes a debug level message with a newline.
@@ -376,9 +383,7 @@ func Debugln(args ...any) {
 // Debugln writes a debug level message with a newline.
 func (l *Logger) Debugln(args ...any) {
 	_, err := l.Writer.debug(fmt.Appendln(nil, args...))
-	if err != nil {
-		l.err = err
-	}
+	l.setErr(err)
 }
 
 // Trace writes a trace level message.
@@ -389,9 +394,7 @@ func Trace(trace string) {
 // Trace writes a trace level message.
 func (l *Logger) Trace(trace string) {
 	_, err := l.Writer.trace([]byte(trace))
-	if err != nil {
-		l.err = err
-	}
+	l.setErr(err)
 }
 
 // Tracef writes a formatted trace level message.
@@ -402,9 +405,7 @@ func Tracef(format string, args ...any) {
 // Tracef writes a formatted trace level message.
 func (l *Logger) Tracef(format string, args ...any) {
 	_, err := l.Writer.trace(fmt.Appendf(nil, format, args...))
-	if err != nil {
-		l.err = err
-	}
+	l.setErr(err)
 }
 
 // Traceln writes a trace level message with a newline.
@@ -415,9 +416,7 @@ func Traceln(args ...any) {
 // Traceln writes a trace level message with a newline.
 func (l *Logger) Traceln(args ...any) {
 	_, err := l.Writer.trace(fmt.Appendln(nil, args...))
-	if err != nil {
-		l.err = err
-	}
+	l.setErr(err)
 }
 
 // Basic logging functions

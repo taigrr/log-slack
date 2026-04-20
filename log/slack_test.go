@@ -598,10 +598,37 @@ func TestLogLevelConstants(t *testing.T) {
 }
 
 func TestErrTrackingOnBadWebhook(t *testing.T) {
-	// Use an invalid URL that will fail to connect
-	logger := New("http://127.0.0.1:1")
-	logger.Info("should fail")
-	if logger.Err() == nil {
-		t.Error("expected error from bad webhook URL")
+	tests := []struct {
+		name string
+		call func(*Logger)
+	}{
+		{name: "Log", call: func(logger *Logger) { logger.Log("should fail") }},
+		{name: "Logf", call: func(logger *Logger) { logger.Logf("%s", "should fail") }},
+		{name: "Logln", call: func(logger *Logger) { logger.Logln("should fail") }},
+		{name: "Error", call: func(logger *Logger) { logger.Error("should fail") }},
+		{name: "Errorf", call: func(logger *Logger) { logger.Errorf("%s", "should fail") }},
+		{name: "Errorln", call: func(logger *Logger) { logger.Errorln("should fail") }},
+		{name: "Warning", call: func(logger *Logger) { logger.Warning("should fail") }},
+		{name: "Warningf", call: func(logger *Logger) { logger.Warningf("%s", "should fail") }},
+		{name: "Warningln", call: func(logger *Logger) { logger.Warningln("should fail") }},
+		{name: "Info", call: func(logger *Logger) { logger.Info("should fail") }},
+		{name: "Infof", call: func(logger *Logger) { logger.Infof("%s", "should fail") }},
+		{name: "Infoln", call: func(logger *Logger) { logger.Infoln("should fail") }},
+		{name: "Debug", call: func(logger *Logger) { logger.Debug("should fail") }},
+		{name: "Debugf", call: func(logger *Logger) { logger.Debugf("%s", "should fail") }},
+		{name: "Debugln", call: func(logger *Logger) { logger.Debugln("should fail") }},
+		{name: "Trace", call: func(logger *Logger) { logger.Trace("should fail") }},
+		{name: "Tracef", call: func(logger *Logger) { logger.Tracef("%s", "should fail") }},
+		{name: "Traceln", call: func(logger *Logger) { logger.Traceln("should fail") }},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			logger := New("http://127.0.0.1:1")
+			test.call(logger)
+			if logger.Err() == nil {
+				t.Fatal("expected error from bad webhook URL")
+			}
+		})
 	}
 }
