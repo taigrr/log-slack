@@ -19,6 +19,11 @@ type slackMessage struct {
 // Returns the server and a function to retrieve received messages.
 func newTestServer(t *testing.T) (*httptest.Server, func() []string) {
 	t.Helper()
+	return newTestServerWithStatus(t, http.StatusOK, "")
+}
+
+func newTestServerWithStatus(t *testing.T, status int, responseBody string) (*httptest.Server, func() []string) {
+	t.Helper()
 	var (
 		mu       sync.Mutex
 		messages []string
@@ -40,7 +45,10 @@ func newTestServer(t *testing.T) (*httptest.Server, func() []string) {
 		mu.Lock()
 		messages = append(messages, msg.Text)
 		mu.Unlock()
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(status)
+		if _, err := io.WriteString(w, responseBody); err != nil {
+			t.Errorf("writing response body: %v", err)
+		}
 	}))
 	get := func() []string {
 		mu.Lock()
@@ -628,6 +636,40 @@ func TestErrTrackingOnBadWebhook(t *testing.T) {
 			test.call(logger)
 			if logger.Err() == nil {
 				t.Fatal("expected error from bad webhook URL")
+			}
+		})
+	}
+}
+
+func TestErrTrackingOnHTTPStatusFailure(t *testing.T) {
+	tests := []struct {
+		name string
+		call func(*Logger)
+	}{
+		{name: "Log", call: func(logger *Logger) { logger.Log("should fail") }},
+		{name: "Error", call: func(logger *Logger) { logger.Error("should fail") }},
+		{name: "Warning", call: func(logger *Logger) { logger.Warning("should fail") }},
+		{name: "Info", call: func(logger *Logger) { logger.Info("should fail") }},
+		{name: "Debug", call: func(logger *Logger) { logger.Debug("should fail") }},
+		{name: "Trace", call: func(logger *Logger) { logger.Trace("should fail") }},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			srv, _ := newTestServerWithStatus(t, http.StatusInternalServerError, "internal slack error")
+			defer srv.Close()
+
+			logger := New(srv.URL)
+			test.call(logger)
+
+			if logger.Err() == nil {
+				t.Fatal("expected error from non-2xx webhook response")
+			}
+			if !strings.Contains(logger.Err().Error(), "500 Internal Server Error") {
+				t.Fatalf("expected status in error, got %v", logger.Err())
+			}
+			if !strings.Contains(logger.Err().Error(), "internal slack error") {
+				t.Fatalf("expected response body in error, got %v", logger.Err())
 			}
 		})
 	}

@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -171,15 +173,31 @@ func (lw LogWriter) Write(p []byte) (n int, err error) {
 }
 
 // postSlack sends a message to a Slack webhook.
-// Returns any error encountered during the HTTP request.
+// Returns any error encountered during the HTTP request or an unsuccessful webhook response.
 func postSlack(webhook, text, prefix string) error {
 	if prefix != "" {
 		text = prefix + text
 	}
 	values := map[string]string{"text": text}
 	jsonValue, _ := json.Marshal(values)
-	_, err := http.Post(webhook, "application/json", bytes.NewBuffer(jsonValue))
-	return err
+	resp, err := http.Post(webhook, "application/json", bytes.NewBuffer(jsonValue))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		body, readErr := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		if readErr != nil {
+			return fmt.Errorf("slack webhook returned status %s and the response body could not be read: %w", resp.Status, readErr)
+		}
+		if trimmed := strings.TrimSpace(string(body)); trimmed != "" {
+			return fmt.Errorf("slack webhook returned status %s: %s", resp.Status, trimmed)
+		}
+		return fmt.Errorf("slack webhook returned status %s", resp.Status)
+	}
+
+	return nil
 }
 
 // New creates a new Logger with the specified webhook URL.
