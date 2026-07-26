@@ -81,7 +81,7 @@ func TestDefault(t *testing.T) {
 	if d == nil {
 		t.Fatal("Default returned nil")
 	}
-	if d != std {
+	if d != std.Load() {
 		t.Error("Default should return the package-level std logger")
 	}
 }
@@ -464,9 +464,9 @@ func TestPrintFunctions(t *testing.T) {
 	defer srv.Close()
 
 	// Override the std logger temporarily
-	oldStd := std
-	std = New(srv.URL)
-	defer func() { std = oldStd }()
+	oldStd := std.Load()
+	std.Store(New(srv.URL))
+	defer func() { std.Store(oldStd) }()
 
 	Print("print test")
 	Printf("printf %d", 99)
@@ -482,9 +482,9 @@ func TestPackageLevelFunctions(t *testing.T) {
 	srv, getMessages := newTestServer(t)
 	defer srv.Close()
 
-	oldStd := std
-	std = New(srv.URL)
-	defer func() { std = oldStd }()
+	oldStd := std.Load()
+	std.Store(New(srv.URL))
+	defer func() { std.Store(oldStd) }()
 
 	Log("log msg")
 	Logf("logf %s", "msg")
@@ -512,9 +512,9 @@ func TestPackageLevelFunctions(t *testing.T) {
 }
 
 func TestPackageLevelSetPrefix(t *testing.T) {
-	oldStd := std
-	std = New("")
-	defer func() { std = oldStd }()
+	oldStd := std.Load()
+	std.Store(New(""))
+	defer func() { std.Store(oldStd) }()
 
 	SetPrefix("[PKG] ")
 	if Prefix() != "[PKG] " {
@@ -523,9 +523,9 @@ func TestPackageLevelSetPrefix(t *testing.T) {
 }
 
 func TestPackageLevelWithLevel(t *testing.T) {
-	oldStd := std
-	std = New("")
-	defer func() { std = oldStd }()
+	oldStd := std.Load()
+	std.Store(New(""))
+	defer func() { std.Store(oldStd) }()
 
 	updated := WithLevel(LevelDebug)
 	if updated.Writer.Level != LevelDebug {
@@ -534,9 +534,9 @@ func TestPackageLevelWithLevel(t *testing.T) {
 }
 
 func TestPackageLevelWithWriter(t *testing.T) {
-	oldStd := std
-	std = New("")
-	defer func() { std = oldStd }()
+	oldStd := std.Load()
+	std.Store(New(""))
+	defer func() { std.Store(oldStd) }()
 
 	w := LogWriter{Log: "https://example.com", Level: LevelInfo}
 	updated := WithWriter(w)
@@ -549,9 +549,9 @@ func TestPanicFunctions(t *testing.T) {
 	srv, _ := newTestServer(t)
 	defer srv.Close()
 
-	oldStd := std
-	std = New(srv.URL)
-	defer func() { std = oldStd }()
+	oldStd := std.Load()
+	std.Store(New(srv.URL))
+	defer func() { std.Store(oldStd) }()
 
 	t.Run("Panic", func(t *testing.T) {
 		defer func() {
@@ -724,6 +724,40 @@ func TestConcurrentLoggingIsRaceFree(t *testing.T) {
 				_ = logger.Err()
 			}
 		}()
+	}
+	wg.Wait()
+}
+
+func TestConcurrentPackageLevelIsRaceFree(t *testing.T) {
+	srv, _ := newTestServer(t)
+	defer srv.Close()
+
+	oldStd := std.Load()
+	std.Store(New(srv.URL))
+	defer func() { std.Store(oldStd) }()
+
+	const goroutines = 16
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for i := range goroutines {
+		go func(n int) {
+			defer wg.Done()
+			for range 25 {
+				switch n % 4 {
+				case 0:
+					// Concurrently swap the default logger to race Store vs Load.
+					std.Store(New(srv.URL))
+				case 1:
+					Info("concurrent")
+					SetPrefix("[p] ")
+				case 2:
+					_ = Prefix()
+					WithLevel(LevelTrace)
+				default:
+					WithWriter(LogWriter{Log: srv.URL, Level: LevelTrace})
+				}
+			}
+		}(i)
 	}
 	wg.Wait()
 }

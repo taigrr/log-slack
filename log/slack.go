@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 )
 
 // LogWriter represents a writer for logging messages to Slack.
@@ -94,7 +95,19 @@ func (l *Logger) ClearErr() {
 	l.err = nil
 }
 
-var std = New("")
+// std is the package-level default logger. It is stored atomically so the
+// package-level API is safe to use concurrently, including if the default
+// logger is swapped.
+var std atomic.Pointer[Logger]
+
+func init() {
+	std.Store(New(""))
+}
+
+// stdLogger returns the current package-level default logger.
+func stdLogger() *Logger {
+	return std.Load()
+}
 
 // Flags and prefix control
 var (
@@ -121,17 +134,17 @@ func Flags() int {
 // SetPrefix sets the prefix for all log messages.
 // The prefix will be prepended to all messages sent to Slack.
 func SetPrefix(p string) {
-	std.SetPrefix(p)
+	stdLogger().SetPrefix(p)
 }
 
 // Prefix returns the current log message prefix.
 func Prefix() string {
-	return std.Prefix()
+	return stdLogger().Prefix()
 }
 
 // Default returns the default logger instance.
 func Default() *Logger {
-	return std
+	return stdLogger()
 }
 
 // info writes an info level message to Slack.
@@ -258,7 +271,7 @@ func New(webhookLink string) *Logger {
 
 // WithLevel sets the log level on the default logger and returns it.
 func WithLevel(level LogLevel) *Logger {
-	return std.WithLevel(level)
+	return stdLogger().WithLevel(level)
 }
 
 // WithLevel sets the log level for the Logger and returns the same Logger for
@@ -272,7 +285,7 @@ func (l *Logger) WithLevel(level LogLevel) *Logger {
 
 // WithWriter sets the LogWriter on the default logger and returns it.
 func WithWriter(w LogWriter) *Logger {
-	return std.WithWriter(w)
+	return stdLogger().WithWriter(w)
 }
 
 // WithWriter sets the LogWriter for the Logger and returns the same Logger for
@@ -286,7 +299,7 @@ func (l *Logger) WithWriter(w LogWriter) *Logger {
 
 // Log writes a message at the default info level.
 func Log(msg string) {
-	std.Log(msg)
+	stdLogger().Log(msg)
 }
 
 // Log writes a message at the default info level.
@@ -297,7 +310,7 @@ func (l *Logger) Log(msg string) {
 
 // Logf writes a formatted message at the default info level.
 func Logf(msg string, args ...any) {
-	std.Logf(msg, args...)
+	stdLogger().Logf(msg, args...)
 }
 
 // Logf writes a formatted message at the default info level.
@@ -308,7 +321,7 @@ func (l *Logger) Logf(msg string, args ...any) {
 
 // Logln writes a message at the default info level with a newline.
 func Logln(args ...any) {
-	std.Logln(args...)
+	stdLogger().Logln(args...)
 }
 
 // Logln writes a message at the default info level with a newline.
@@ -319,7 +332,7 @@ func (l *Logger) Logln(args ...any) {
 
 // Error writes an error level message.
 func Error(args ...any) {
-	std.Error(args...)
+	stdLogger().Error(args...)
 }
 
 // Error writes an error level message.
@@ -330,7 +343,7 @@ func (l *Logger) Error(args ...any) {
 
 // Errorf writes a formatted error level message.
 func Errorf(format string, args ...any) {
-	std.Errorf(format, args...)
+	stdLogger().Errorf(format, args...)
 }
 
 // Errorf writes a formatted error level message.
@@ -341,7 +354,7 @@ func (l *Logger) Errorf(format string, args ...any) {
 
 // Errorln writes an error level message with a newline.
 func Errorln(args ...any) {
-	std.Errorln(args...)
+	stdLogger().Errorln(args...)
 }
 
 // Errorln writes an error level message with a newline.
@@ -352,7 +365,7 @@ func (l *Logger) Errorln(args ...any) {
 
 // Warning writes a warning level message.
 func Warning(warning string) {
-	std.Warning(warning)
+	stdLogger().Warning(warning)
 }
 
 // Warning writes a warning level message.
@@ -363,7 +376,7 @@ func (l *Logger) Warning(warning string) {
 
 // Warningf writes a formatted warning level message.
 func Warningf(format string, args ...any) {
-	std.Warningf(format, args...)
+	stdLogger().Warningf(format, args...)
 }
 
 // Warningf writes a formatted warning level message.
@@ -374,7 +387,7 @@ func (l *Logger) Warningf(format string, args ...any) {
 
 // Warningln writes a warning level message with a newline.
 func Warningln(args ...any) {
-	std.Warningln(args...)
+	stdLogger().Warningln(args...)
 }
 
 // Warningln writes a warning level message with a newline.
@@ -385,7 +398,7 @@ func (l *Logger) Warningln(args ...any) {
 
 // Info writes an info level message.
 func Info(info string) {
-	std.Info(info)
+	stdLogger().Info(info)
 }
 
 // Info writes an info level message.
@@ -396,7 +409,7 @@ func (l *Logger) Info(info string) {
 
 // Infof writes a formatted info level message.
 func Infof(format string, args ...any) {
-	std.Infof(format, args...)
+	stdLogger().Infof(format, args...)
 }
 
 // Infof writes a formatted info level message.
@@ -407,7 +420,7 @@ func (l *Logger) Infof(format string, args ...any) {
 
 // Infoln writes an info level message with a newline.
 func Infoln(args ...any) {
-	std.Infoln(args...)
+	stdLogger().Infoln(args...)
 }
 
 // Infoln writes an info level message with a newline.
@@ -418,7 +431,7 @@ func (l *Logger) Infoln(args ...any) {
 
 // Debug writes a debug level message.
 func Debug(debug string) {
-	std.Debug(debug)
+	stdLogger().Debug(debug)
 }
 
 // Debug writes a debug level message.
@@ -429,7 +442,7 @@ func (l *Logger) Debug(debug string) {
 
 // Debugf writes a formatted debug level message.
 func Debugf(format string, args ...any) {
-	std.Debugf(format, args...)
+	stdLogger().Debugf(format, args...)
 }
 
 func (l *Logger) Debugf(format string, args ...any) {
@@ -439,7 +452,7 @@ func (l *Logger) Debugf(format string, args ...any) {
 
 // Debugln writes a debug level message with a newline.
 func Debugln(args ...any) {
-	std.Debugln(args...)
+	stdLogger().Debugln(args...)
 }
 
 // Debugln writes a debug level message with a newline.
@@ -450,7 +463,7 @@ func (l *Logger) Debugln(args ...any) {
 
 // Trace writes a trace level message.
 func Trace(trace string) {
-	std.Trace(trace)
+	stdLogger().Trace(trace)
 }
 
 // Trace writes a trace level message.
@@ -461,7 +474,7 @@ func (l *Logger) Trace(trace string) {
 
 // Tracef writes a formatted trace level message.
 func Tracef(format string, args ...any) {
-	std.Tracef(format, args...)
+	stdLogger().Tracef(format, args...)
 }
 
 // Tracef writes a formatted trace level message.
@@ -472,7 +485,7 @@ func (l *Logger) Tracef(format string, args ...any) {
 
 // Traceln writes a trace level message with a newline.
 func Traceln(args ...any) {
-	std.Traceln(args...)
+	stdLogger().Traceln(args...)
 }
 
 // Traceln writes a trace level message with a newline.
@@ -483,35 +496,35 @@ func (l *Logger) Traceln(args ...any) {
 
 // Basic logging functions
 func Print(v ...any) {
-	std.Log(fmt.Sprint(v...))
+	stdLogger().Log(fmt.Sprint(v...))
 }
 
 // Printf writes a formatted message at the default info level.
 func Printf(format string, v ...any) {
-	std.Logf(format, v...)
+	stdLogger().Logf(format, v...)
 }
 
 // Println writes a message at the default info level with a newline.
 func Println(v ...any) {
-	std.Logln(v...)
+	stdLogger().Logln(v...)
 }
 
 // Fatal writes a message at the default error level.
 // Subsequently, it calls os.Exit(1).
 func Fatal(v ...any) {
-	std.Error(fmt.Sprint(v...))
+	stdLogger().Error(fmt.Sprint(v...))
 	os.Exit(1)
 }
 
 // Fatalf writes a formatted message at the default error level.
 func Fatalf(format string, v ...any) {
-	std.Errorf(format, v...)
+	stdLogger().Errorf(format, v...)
 	os.Exit(1)
 }
 
 // Fatalln writes a message at the default error level with a newline.
 func Fatalln(v ...any) {
-	std.Errorln(v...)
+	stdLogger().Errorln(v...)
 	os.Exit(1)
 }
 
@@ -519,7 +532,7 @@ func Fatalln(v ...any) {
 // Subsequently, it panics with the message.
 func Panic(v ...any) {
 	s := fmt.Sprint(v...)
-	std.Error(s)
+	stdLogger().Error(s)
 	panic(s)
 }
 
@@ -527,7 +540,7 @@ func Panic(v ...any) {
 // Subsequently, it panics with the formatted message.
 func Panicf(format string, v ...any) {
 	s := fmt.Sprintf(format, v...)
-	std.Error(s)
+	stdLogger().Error(s)
 	panic(s)
 }
 
@@ -535,6 +548,6 @@ func Panicf(format string, v ...any) {
 // Subsequently, it panics with the message.
 func Panicln(v ...any) {
 	s := fmt.Sprintln(v...)
-	std.Error(s)
+	stdLogger().Error(s)
 	panic(s)
 }
