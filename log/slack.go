@@ -186,7 +186,7 @@ func postSlack(webhook, text, prefix string) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= http.StatusBadRequest {
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		body, readErr := io.ReadAll(io.LimitReader(resp.Body, 1024))
 		if readErr != nil {
 			return fmt.Errorf("slack webhook returned status %s and the response body could not be read: %w", resp.Status, readErr)
@@ -196,6 +196,9 @@ func postSlack(webhook, text, prefix string) error {
 		}
 		return fmt.Errorf("slack webhook returned status %s", resp.Status)
 	}
+
+	// Drain the body so the underlying connection can be reused.
+	_, _ = io.Copy(io.Discard, resp.Body)
 
 	return nil
 }

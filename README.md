@@ -1,5 +1,9 @@
 # Log-Slack
 
+[![Test](https://github.com/taigrr/log-slack/actions/workflows/test.yml/badge.svg)](https://github.com/taigrr/log-slack/actions/workflows/test.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/taigrr/log-slack.svg)](https://pkg.go.dev/github.com/taigrr/log-slack)
+[![Go Report Card](https://goreportcard.com/badge/github.com/taigrr/log-slack)](https://goreportcard.com/report/github.com/taigrr/log-slack)
+
 A Go package for sending logs to Slack via webhooks with different log levels.
 
 ## Features
@@ -131,3 +135,7 @@ if err := logger.Err(); err != nil {
 - The package uses HTTP POST requests to send messages to Slack
 - Log levels are hierarchical - setting a level will include all higher priority levels
 - Global prefix is prepended to all messages
+
+## License
+
+Released under the [0BSD](LICENSE) license.
