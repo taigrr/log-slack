@@ -674,3 +674,56 @@ func TestErrTrackingOnHTTPStatusFailure(t *testing.T) {
 		})
 	}
 }
+
+func TestErrIsStickyUntilCleared(t *testing.T) {
+	failSrv, _ := newTestServerWithStatus(t, http.StatusInternalServerError, "boom")
+	defer failSrv.Close()
+	okSrv, getMessages := newTestServer(t)
+	defer okSrv.Close()
+
+	logger := New(failSrv.URL)
+	logger.Info("this fails")
+	if logger.Err() == nil {
+		t.Fatal("expected error after failing send")
+	}
+
+	// A subsequent successful send must NOT clear the sticky error.
+	// info() posts to the Log field, so point it at the ok server.
+	logger.WithWriter(LogWriter{Log: okSrv.URL, Level: LevelTrace})
+	logger.Info("this succeeds")
+	if got := getMessages(); len(got) != 1 {
+		t.Fatalf("expected the successful send to reach the server, got %d messages", len(got))
+	}
+	if logger.Err() == nil {
+		t.Fatal("error should remain sticky after a successful send")
+	}
+
+	// Explicit clear resets it.
+	logger.ClearErr()
+	if logger.Err() != nil {
+		t.Fatalf("expected nil error after ClearErr, got %v", logger.Err())
+	}
+}
+
+func TestConcurrentLoggingIsRaceFree(t *testing.T) {
+	srv, _ := newTestServer(t)
+	defer srv.Close()
+
+	logger := New(srv.URL)
+
+	const goroutines = 16
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for range goroutines {
+		go func() {
+			defer wg.Done()
+			for range 25 {
+				logger.Info("concurrent")
+				logger.SetPrefix("[p] ")
+				_ = logger.Prefix()
+				_ = logger.Err()
+			}
+		}()
+	}
+	wg.Wait()
+}

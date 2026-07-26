@@ -97,22 +97,26 @@ The `LogWriter` struct allows configuration of different webhook URLs for each l
 
 ```go
 type LogWriter struct {
-    Log     string
-    Error   string
-    Warning string
+    Log     string // used by Log/Print/Info-level sends
+    Error   string // used by Error/Fatal/Panic sends
+    Warning string // used by Warning sends
     Info    string
-    Debug   string
-    Trace   string
+    Debug   string // used by Debug sends
+    Trace   string // used by Trace sends
     Level   LogLevel
 }
 ```
+
+Each field is the webhook URL for its level. `Info`/`Log` messages post to the
+`Log` field. When constructed via `New`, every field is set to the same
+webhook URL.
 
 ### Custom Configuration
 
 ```go
 writer := log.LogWriter{
-    Error: "error-webhook-url",
-    Info: "info-webhook-url",
+    Log:   "info-webhook-url",  // Log/Info messages
+    Error: "error-webhook-url", // Error messages
     Level: log.LevelInfo,
 }
 logger := log.Default().WithWriter(writer)
@@ -120,7 +124,8 @@ logger := log.Default().WithWriter(writer)
 
 ## Error Handling
 
-By default, failed Slack posts are silently ignored. To handle errors, you can check the return value of logging methods:
+By default, failed Slack posts do not interrupt your program. The most recent
+send error is recorded on the logger and can be inspected via `Err()`:
 
 ```go
 logger.Info("message")
@@ -128,6 +133,17 @@ if err := logger.Err(); err != nil {
     // Handle error
 }
 ```
+
+The stored error is **sticky**: once a send fails, `Err()` keeps returning that
+error even after later successful sends, until you reset it with `ClearErr()`:
+
+```go
+if logger.Err() != nil {
+    logger.ClearErr() // reset after handling
+}
+```
+
+All loggers are safe for concurrent use by multiple goroutines.
 
 ## Notes
 
