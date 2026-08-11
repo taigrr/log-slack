@@ -97,7 +97,7 @@ The `LogWriter` struct allows configuration of different webhook URLs for each l
 
 ```go
 type LogWriter struct {
-    Log     string // used by Log/Print/Info-level sends
+    Log     string // used by Log/Print sends and as an Info fallback
     Error   string // used by Error/Fatal/Panic sends
     Warning string // used by Warning sends
     Info    string
@@ -107,9 +107,9 @@ type LogWriter struct {
 }
 ```
 
-Each field is the webhook URL for its level. `Info`/`Log` messages post to the
-`Log` field. When constructed via `New`, every field is set to the same
-webhook URL.
+Each field is the webhook URL for its level. `Info` messages post to the
+`Info` field when it is set, then fall back to `Log` for compatibility. When
+constructed via `New`, every field is set to the same webhook URL.
 
 ### Custom Configuration
 

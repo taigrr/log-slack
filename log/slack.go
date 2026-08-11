@@ -156,7 +156,14 @@ func (lw LogWriter) info(p []byte) (n int, err error) {
 	buf := make([]byte, len(p))
 	copy(buf, p)
 	strLine := fmt.Sprintf("INFO: %s", string(buf))
-	return len(p), postSlack(lw.Log, strLine, lw.prefix)
+	return len(p), postSlack(lw.infoWebhook(), strLine, lw.prefix)
+}
+
+func (lw LogWriter) infoWebhook() string {
+	if lw.Info != "" {
+		return lw.Info
+	}
+	return lw.Log
 }
 
 // error writes an error level message to Slack.

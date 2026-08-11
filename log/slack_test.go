@@ -270,6 +270,46 @@ func TestLoggerInfo(t *testing.T) {
 	}
 }
 
+func TestLoggerInfoUsesInfoWebhook(t *testing.T) {
+	logSrv, getLogMessages := newTestServer(t)
+	defer logSrv.Close()
+	infoSrv, getInfoMessages := newTestServer(t)
+	defer infoSrv.Close()
+
+	logger := New("")
+	logger.WithWriter(LogWriter{
+		Log:   logSrv.URL,
+		Info:  infoSrv.URL,
+		Level: LevelTrace,
+	})
+
+	logger.Info("info msg")
+
+	if got := getLogMessages(); len(got) != 0 {
+		t.Fatalf("expected Log webhook to receive 0 messages, got %d: %v", len(got), got)
+	}
+	if got := getInfoMessages(); len(got) != 1 {
+		t.Fatalf("expected Info webhook to receive 1 message, got %d: %v", len(got), got)
+	}
+}
+
+func TestLoggerInfoFallsBackToLogWebhook(t *testing.T) {
+	srv, getMessages := newTestServer(t)
+	defer srv.Close()
+
+	logger := New("")
+	logger.WithWriter(LogWriter{
+		Log:   srv.URL,
+		Level: LevelTrace,
+	})
+
+	logger.Info("info msg")
+
+	if got := getMessages(); len(got) != 1 {
+		t.Fatalf("expected Log webhook fallback to receive 1 message, got %d: %v", len(got), got)
+	}
+}
+
 func TestLoggerInfof(t *testing.T) {
 	srv, getMessages := newTestServer(t)
 	defer srv.Close()
@@ -688,7 +728,7 @@ func TestErrIsStickyUntilCleared(t *testing.T) {
 	}
 
 	// A subsequent successful send must NOT clear the sticky error.
-	// info() posts to the Log field, so point it at the ok server.
+	// Info falls back to the Log field, so point it at the ok server.
 	logger.WithWriter(LogWriter{Log: okSrv.URL, Level: LevelTrace})
 	logger.Info("this succeeds")
 	if got := getMessages(); len(got) != 1 {
