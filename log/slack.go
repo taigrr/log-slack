@@ -217,7 +217,13 @@ func (lw LogWriter) trace(p []byte) (n int, err error) {
 // log writes a message at the default info level to Slack.
 // Returns the number of bytes written and any error encountered.
 func (lw LogWriter) log(p []byte) (n int, err error) {
-	return lw.info(p)
+	if lw.Level < LevelInfo {
+		return
+	}
+	buf := make([]byte, len(p))
+	copy(buf, p)
+	strLine := fmt.Sprintf("INFO: %s", string(buf))
+	return len(p), postSlack(lw.Log, strLine, lw.prefix)
 }
 
 // Write implements the io.Writer interface for LogWriter.

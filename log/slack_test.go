@@ -310,6 +310,29 @@ func TestLoggerInfoFallsBackToLogWebhook(t *testing.T) {
 	}
 }
 
+func TestLoggerLogStaysOnLogWebhook(t *testing.T) {
+	logSrv, getLogMessages := newTestServer(t)
+	defer logSrv.Close()
+	infoSrv, getInfoMessages := newTestServer(t)
+	defer infoSrv.Close()
+
+	logger := New("")
+	logger.WithWriter(LogWriter{
+		Log:   logSrv.URL,
+		Info:  infoSrv.URL,
+		Level: LevelTrace,
+	})
+
+	logger.Log("log msg")
+
+	if got := getInfoMessages(); len(got) != 0 {
+		t.Fatalf("expected Info webhook to receive 0 messages, got %d: %v", len(got), got)
+	}
+	if got := getLogMessages(); len(got) != 1 {
+		t.Fatalf("expected Log webhook to receive 1 message, got %d: %v", len(got), got)
+	}
+}
+
 func TestLoggerInfof(t *testing.T) {
 	srv, getMessages := newTestServer(t)
 	defer srv.Close()
