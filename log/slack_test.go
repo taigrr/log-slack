@@ -15,6 +15,12 @@ type slackMessage struct {
 	Text string `json:"text"`
 }
 
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return fn(req)
+}
+
 // newTestServer creates an httptest server that records received messages.
 // Returns the server and a function to retrieve received messages.
 func newTestServer(t *testing.T) (*httptest.Server, func() []string) {
@@ -107,6 +113,56 @@ func TestWithWriter(t *testing.T) {
 	}
 	if updated.Writer.Level != LevelError {
 		t.Errorf("expected LevelError, got %d", updated.Writer.Level)
+	}
+}
+
+func TestWithWriterUsesConfiguredHTTPClient(t *testing.T) {
+	var called bool
+	client := &http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			called = true
+			if req.Header.Get("Content-Type") != slackContentType {
+				t.Errorf("expected content type %q, got %q", slackContentType, req.Header.Get("Content-Type"))
+			}
+
+			body, err := io.ReadAll(req.Body)
+			if err != nil {
+				t.Fatalf("reading request body: %v", err)
+			}
+			defer req.Body.Close()
+
+			var msg slackMessage
+			if err := json.Unmarshal(body, &msg); err != nil {
+				t.Fatalf("unmarshaling message: %v", err)
+			}
+			if !strings.Contains(msg.Text, "custom client") {
+				t.Fatalf("expected payload to contain custom client message, got %q", msg.Text)
+			}
+
+			return &http.Response{
+				Status:     "200 OK",
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader("")),
+				Header:     make(http.Header),
+				Request:    req,
+			}, nil
+		}),
+	}
+
+	logger := New("https://example.com/webhook")
+	logger.WithWriter(LogWriter{
+		Log:    "https://example.com/webhook",
+		Level:  LevelTrace,
+		Client: client,
+	})
+
+	logger.Info("custom client")
+
+	if !called {
+		t.Fatal("expected configured HTTP client to be used")
+	}
+	if logger.Err() != nil {
+		t.Fatalf("unexpected logger error: %v", logger.Err())
 	}
 }
 
