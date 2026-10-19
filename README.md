@@ -103,13 +103,14 @@ type LogWriter struct {
     Info    string
     Debug   string // used by Debug sends
     Trace   string // used by Trace sends
+    Client  *http.Client // optional HTTP client; defaults to one with a 10s timeout
     Level   LogLevel
 }
 ```
 
 Each field is the webhook URL for its level. `Info` messages post to the
 `Info` field when it is set, then fall back to `Log` for compatibility. When
-constructed via `New`, every field is set to the same webhook URL.
+constructed via `New`, every webhook field is set to the same URL.
 
 ### Custom Configuration
 

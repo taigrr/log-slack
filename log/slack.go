@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // LogWriter represents a writer for logging messages to Slack.
@@ -21,6 +22,7 @@ type LogWriter struct {
 	Info    string
 	Debug   string
 	Trace   string
+	Client  *http.Client
 
 	prefix string
 	Level  LogLevel
@@ -36,6 +38,15 @@ const (
 	LevelDebug
 	LevelTrace
 )
+
+const (
+	slackContentType       = "application/json"
+	slackResponseBodyLimit = 1024
+)
+
+var defaultSlackHTTPClient = &http.Client{
+	Timeout: 10 * time.Second,
+}
 
 type Logger struct {
 	Writer LogWriter
@@ -156,7 +167,7 @@ func (lw LogWriter) info(p []byte) (n int, err error) {
 	buf := make([]byte, len(p))
 	copy(buf, p)
 	strLine := fmt.Sprintf("INFO: %s", string(buf))
-	return len(p), postSlack(lw.infoWebhook(), strLine, lw.prefix)
+	return len(p), postSlack(lw.httpClient(), lw.infoWebhook(), strLine, lw.prefix)
 }
 
 func (lw LogWriter) infoWebhook() string {
@@ -164,6 +175,13 @@ func (lw LogWriter) infoWebhook() string {
 		return lw.Info
 	}
 	return lw.Log
+}
+
+func (lw LogWriter) httpClient() *http.Client {
+	if lw.Client != nil {
+		return lw.Client
+	}
+	return defaultSlackHTTPClient
 }
 
 // error writes an error level message to Slack.
@@ -175,7 +193,7 @@ func (lw LogWriter) error(p []byte) (n int, err error) {
 	buf := make([]byte, len(p))
 	copy(buf, p)
 	strLine := fmt.Sprintf("ERRO: %s", string(buf))
-	return len(p), postSlack(lw.Error, strLine, lw.prefix)
+	return len(p), postSlack(lw.httpClient(), lw.Error, strLine, lw.prefix)
 }
 
 // warning writes a warning level message to Slack.
@@ -187,7 +205,7 @@ func (lw LogWriter) warning(p []byte) (n int, err error) {
 	buf := make([]byte, len(p))
 	copy(buf, p)
 	strLine := fmt.Sprintf("WARN: %s", string(buf))
-	return len(p), postSlack(lw.Warning, strLine, lw.prefix)
+	return len(p), postSlack(lw.httpClient(), lw.Warning, strLine, lw.prefix)
 }
 
 // debug writes a debug level message to Slack.
@@ -199,7 +217,7 @@ func (lw LogWriter) debug(p []byte) (n int, err error) {
 	buf := make([]byte, len(p))
 	copy(buf, p)
 	strLine := fmt.Sprintf("DEBG: %s", string(buf))
-	return len(p), postSlack(lw.Debug, strLine, lw.prefix)
+	return len(p), postSlack(lw.httpClient(), lw.Debug, strLine, lw.prefix)
 }
 
 // trace writes a trace level message to Slack.
@@ -211,7 +229,7 @@ func (lw LogWriter) trace(p []byte) (n int, err error) {
 	buf := make([]byte, len(p))
 	copy(buf, p)
 	strLine := fmt.Sprintf("TRCE: %s", string(buf))
-	return len(p), postSlack(lw.Trace, strLine, lw.prefix)
+	return len(p), postSlack(lw.httpClient(), lw.Trace, strLine, lw.prefix)
 }
 
 // log writes a message at the default info level to Slack.
@@ -223,7 +241,7 @@ func (lw LogWriter) log(p []byte) (n int, err error) {
 	buf := make([]byte, len(p))
 	copy(buf, p)
 	strLine := fmt.Sprintf("INFO: %s", string(buf))
-	return len(p), postSlack(lw.Log, strLine, lw.prefix)
+	return len(p), postSlack(lw.httpClient(), lw.Log, strLine, lw.prefix)
 }
 
 // Write implements the io.Writer interface for LogWriter.
@@ -232,25 +250,28 @@ func (lw LogWriter) Write(p []byte) (n int, err error) {
 	buf := make([]byte, len(p))
 	copy(buf, p)
 	strLine := string(buf)
-	return len(p), postSlack(lw.Log, strLine, lw.prefix)
+	return len(p), postSlack(lw.httpClient(), lw.Log, strLine, lw.prefix)
 }
 
 // postSlack sends a message to a Slack webhook.
 // Returns any error encountered during the HTTP request or an unsuccessful webhook response.
-func postSlack(webhook, text, prefix string) error {
+func postSlack(client *http.Client, webhook, text, prefix string) error {
 	if prefix != "" {
 		text = prefix + text
 	}
 	values := map[string]string{"text": text}
-	jsonValue, _ := json.Marshal(values)
-	resp, err := http.Post(webhook, "application/json", bytes.NewBuffer(jsonValue))
+	jsonValue, err := json.Marshal(values)
+	if err != nil {
+		return fmt.Errorf("marshal slack webhook payload: %w", err)
+	}
+	resp, err := client.Post(webhook, slackContentType, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		body, readErr := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		body, readErr := io.ReadAll(io.LimitReader(resp.Body, slackResponseBodyLimit))
 		if readErr != nil {
 			return fmt.Errorf("slack webhook returned status %s and the response body could not be read: %w", resp.Status, readErr)
 		}
