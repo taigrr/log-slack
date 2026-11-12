@@ -246,11 +246,12 @@ func (lw LogWriter) log(p []byte) (n int, err error) {
 
 // Write implements the io.Writer interface for LogWriter.
 // Writes the message to Slack at the default info level.
+// On delivery failure it returns zero bytes written and the delivery error.
 func (lw LogWriter) Write(p []byte) (n int, err error) {
-	buf := make([]byte, len(p))
-	copy(buf, p)
-	strLine := string(buf)
-	return len(p), postSlack(lw.httpClient(), lw.Log, strLine, lw.prefix)
+	if err := postSlack(lw.httpClient(), lw.Log, string(p), lw.prefix); err != nil {
+		return 0, err
+	}
+	return len(p), nil
 }
 
 // postSlack sends a message to a Slack webhook.
@@ -268,7 +269,10 @@ func postSlack(client *http.Client, webhook, text, prefix string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		// Delivery is determined by the HTTP status, not cleanup errors.
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		body, readErr := io.ReadAll(io.LimitReader(resp.Body, slackResponseBodyLimit))

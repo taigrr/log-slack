@@ -42,7 +42,7 @@ func newTestServerWithStatus(t *testing.T, status int, responseBody string) (*ht
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		defer r.Body.Close()
+		// The HTTP server closes the incoming request body after the handler returns.
 		var msg slackMessage
 		if err := json.Unmarshal(body, &msg); err != nil {
 			t.Errorf("unmarshaling message: %v", err)
@@ -140,7 +140,11 @@ func TestWithWriterUsesConfiguredHTTPClient(t *testing.T) {
 			if err != nil {
 				t.Fatalf("reading request body: %v", err)
 			}
-			defer req.Body.Close()
+			defer func() {
+				if err := req.Body.Close(); err != nil {
+					t.Errorf("closing request body: %v", err)
+				}
+			}()
 
 			var msg slackMessage
 			if err := json.Unmarshal(body, &msg); err != nil {
