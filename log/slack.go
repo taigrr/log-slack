@@ -586,6 +586,6 @@ func Panicf(format string, v ...any) {
 // Subsequently, it panics with the message.
 func Panicln(v ...any) {
 	s := fmt.Sprintln(v...)
-	stdLogger().Error(s)
+	stdLogger().Errorf("%s", s)
 	panic(s)
 }
